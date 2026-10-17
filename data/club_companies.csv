@@ -1,0 +1,35 @@
+club,company_number,company_name,basis,note
+AFC Bournemouth,06632170,AFC BOURNEMOUTH LIMITED,company,
+Arsenal,00109244,THE ARSENAL FOOTBALL CLUB LIMITED,company,
+Aston Villa,02502822,ASTON VILLA FC LIMITED,company,03375789 has only 8-20m staff costs and 00046572 has no employees; Aston Villa FC Limited tried next - verify
+Brentford,03642327,BRENTFORD FC LIMITED,company,
+Brighton & Hove Albion,00081077,"BRIGHTON AND HOVE ALBION FOOTBALL CLUB,LIMITED(THE)",company,
+Burnley,00054222,"BURNLEY FOOTBALL & ATHLETIC COMPANY,LIMITED(THE)",company,
+Cardiff City,00109065,CARDIFF CITY FOOTBALL CLUB LIMITED,company,Holdings company 04044254 files group accounts; operating club chosen
+Chelsea,01965149,CHELSEA FOOTBALL CLUB LIMITED,company,
+Crystal Palace,07270793,CPFC LIMITED,company,Not found by name; CPFC LIMITED files full accounts. Verify staff costs note is the football operation. CPFC 2010 LIMITED (07206409) is the group parent
+Everton,00036624,"EVERTON FOOTBALL CLUB COMPANY, LIMITED",company,
+Fulham,02114486,FULHAM FOOTBALL CLUB LIMITED,company,
+Huddersfield Town,01771361,THE HUDDERSFIELD TOWN ASSOCIATION FOOTBALL CLUB LIMITED,company,
+Hull City,04032392,HULL CITY TIGERS LIMITED,company,
+Ipswich Town,00315421,IPSWICH TOWN FOOTBALL CLUB COMPANY LIMITED,company,
+Leeds United,06233875,LEEDS UNITED FOOTBALL CLUB LIMITED,company,
+Leicester City,04593477,LEICESTER CITY FOOTBALL CLUB LIMITED,company,
+Liverpool,00035668,THE LIVERPOOL FOOTBALL CLUB AND ATHLETIC GROUNDS LIMITED,company,
+Luton Town,06133975,LUTON TOWN FOOTBALL CLUB 2020 LTD,company,Old company 04977080 has no filings in range. 5 of 12 filings are small-company accounts which may omit the staff costs note
+Manchester City,00040946,MANCHESTER CITY FOOTBALL CLUB LIMITED,company,
+Manchester United,00095489,MANCHESTER UNITED FOOTBALL CLUB LIMITED,company,
+Middlesbrough,01947851,MIDDLESBROUGH FOOTBALL & ATHLETIC COMPANY (1986) LIMITED,company,The other two candidates are dormant or holdings
+Newcastle United,00031014,NEWCASTLE UNITED FOOTBALL COMPANY LIMITED,company,NUFC Ltd 05981582 is dormant; Newcastle United Limited 02529667 files group accounts
+Norwich City,00154044,NORWICH CITY FOOTBALL CLUB PLC,company,
+Nottingham Forest,01630402,NOTTINGHAM FOREST FOOTBALL CLUB LIMITED,company,
+Sheffield United,00061564,THE SHEFFIELD UNITED FOOTBALL CLUB LIMITED,company,
+Southampton,00053301,SOUTHAMPTON FOOTBALL CLUB LIMITED,company,
+Stoke City,00099885,STOKE CITY FOOTBALL CLUB LIMITED,company,
+Sunderland,00049116,"SUNDERLAND ASSOCIATION FOOTBALL CLUB,LIMITED(THE)",company,
+Swansea City,00123414,SWANSEA CITY ASSOCIATION FOOTBALL CLUB LIMITED(THE),company,The other Swansea company (04056708) files micro-entity accounts
+Tottenham Hotspur,00057186,TOTTENHAM HOTSPUR FOOTBALL & ATHLETIC CO. LTD,company,Tottenham Hotspur Limited 01706358 files group accounts including the stadium; verify the club company's staff costs note
+Watford,00104194,"WATFORD ASSOCIATION FOOTBALL CLUB LIMITED(THE)",company,
+West Bromwich Albion,03295063,WEST BROMWICH ALBION FOOTBALL CLUB LIMITED,company,
+West Ham United,00066516,WEST HAM UNITED FOOTBALL CLUB LIMITED,company,
+Wolverhampton Wanderers,01989823,WOLVERHAMPTON WANDERERS FOOTBALL CLUB (1986) LIMITED,company,

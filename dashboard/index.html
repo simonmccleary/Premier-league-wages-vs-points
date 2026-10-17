@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Football Wages and League Position</title>
+<meta name="description" content="Premier League staff costs against league points, 2015/16 to 2024/25. Interactive dashboard.">
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #0b1424; --surface: #0f1a2e; --surface-2: #14233d; --grid: #22304a; --ring: rgba(255,255,255,.10);
+    --ink: #eef1f6; --ink-2: #c3cad8; --muted: #8a93a6;
+    --blue: #3987e5; --orange: #d95926; --red: #e66767; --aqua: #199e70;
+    --serif: Georgia, "Times New Roman", serif;
+    --sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--sans); line-height: 1.5; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1, h2 { font-family: var(--serif); font-weight: 600; letter-spacing: -.01em; }
+  h1 { font-size: clamp(1.9rem, 4vw, 2.6rem); line-height: 1.15; margin: 0 0 12px; }
+  h2 { font-size: 1.25rem; margin: 0 0 4px; }
+  .lede { color: var(--ink-2); max-width: 70ch; margin: 0 0 24px; font-size: 1.05rem; }
+  .hero { display: flex; gap: 32px; flex-wrap: wrap; align-items: baseline; margin: 8px 0 24px; }
+  .hero .big { font-size: 3.4rem; font-weight: 600; line-height: 1; }
+  .hero .cap { color: var(--ink-2); max-width: 46ch; }
+  .stats { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+  .stat { background: var(--surface); border: 1px solid var(--ring); border-radius: 10px; padding: 10px 14px; min-width: 150px; }
+  .stat .v { font-size: 1.3rem; font-weight: 600; }
+  .stat .l { color: var(--muted); font-size: .82rem; }
+  .filters { display: flex; gap: 10px 18px; flex-wrap: wrap; align-items: center; background: var(--surface); border: 1px solid var(--ring);
+             border-radius: 12px; padding: 12px 14px; margin-bottom: 20px; position: sticky; top: 0; z-index: 5; }
+  .filters label { color: var(--muted); font-size: .82rem; display: flex; gap: 6px; align-items: center; }
+  select, input[type=text] { background: var(--surface-2); color: var(--ink); border: 1px solid var(--ring); border-radius: 8px; padding: 6px 8px; font: inherit; font-size: .9rem; }
+  .pills { display: flex; gap: 6px; }
+  .pill { background: transparent; color: var(--ink-2); border: 1px solid var(--grid); border-radius: 999px; padding: 5px 12px; font: inherit; font-size: .86rem; cursor: pointer; }
+  .pill[aria-pressed=true] { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .pill:focus-visible, select:focus-visible, input:focus-visible, button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip { background: var(--orange); color: #fff; border: 0; border-radius: 999px; padding: 3px 10px; font-size: .8rem; cursor: pointer; }
+  .grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+  @media (min-width: 900px) { .grid.two { grid-template-columns: 1fr 1fr; } }
+  .card { background: var(--surface); border: 1px solid var(--ring); border-radius: 14px; padding: 18px 18px 12px; }
+  .card p.cap { color: var(--ink-2); margin: 0 0 8px; font-size: .94rem; }
+  .card p.note { color: var(--muted); font-size: .8rem; margin: 6px 0 0; }
+  svg { width: 100%; height: auto; display: block; overflow: visible; }
+  svg text { font-family: var(--sans); fill: var(--muted); font-size: 11px; }
+  svg .ink { fill: var(--ink-2); }
+  #bars text, #trend text, #conc text { font-size: 13.5px; }
+  .tip { position: fixed; pointer-events: none; background: #060d19; border: 1px solid var(--ring); border-radius: 8px; padding: 8px 10px;
+         font-size: .82rem; color: var(--ink); z-index: 10; display: none; max-width: 240px; box-shadow: 0 6px 20px rgba(0,0,0,.4); }
+  .tip b { font-weight: 600; }
+  .tip .m { color: var(--muted); }
+  table { width: 100%; border-collapse: collapse; font-size: .85rem; font-variant-numeric: tabular-nums; }
+  th, td { text-align: right; padding: 5px 8px; border-bottom: 1px solid var(--grid); }
+  th:first-child, td:first-child, th:nth-child(2), td:nth-child(2) { text-align: left; }
+  th { color: var(--muted); font-weight: 500; cursor: pointer; position: sticky; top: 0; background: var(--surface); }
+  .tablewrap { max-height: 420px; overflow: auto; }
+  .method { color: var(--ink-2); font-size: .94rem; max-width: 80ch; }
+  .method li { margin: 6px 0; }
+  .method code { background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
+  a { color: var(--blue); }
+  .hidden { display: none; }
+  .sr { position: absolute; left: -9999px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>How much of a Premier League club's results does its wage bill buy?</h1>
+  <p class="lede">Staff costs from each club's filed accounts, set against league points for ten seasons (2015/16 to 2024/25). Change the seasons, the measure or the club below and everything recalculates.</p>
+
+  <div class="hero">
+    <div class="big" id="heroR2">--</div>
+    <div class="cap" id="heroCap"></div>
+  </div>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="filters" role="group" aria-label="Filters">
+    <label>From <select id="from"></select></label>
+    <label>To <select id="to"></select></label>
+    <label>Measure
+      <span class="pills" id="metric">
+        <button class="pill" data-v="points" aria-pressed="true">Points</button>
+        <button class="pill" data-v="position" aria-pressed="false">Position</button>
+      </span>
+    </label>
+    <label>Staff costs
+      <span class="pills" id="basis">
+        <button class="pill" data-v="annual" aria-pressed="true">Annualised</button>
+        <button class="pill" data-v="reported" aria-pressed="false">As reported</button>
+      </span>
+    </label>
+    <label>Highlight <input type="text" id="club" list="clubs" placeholder="Type a club" autocomplete="off"></label>
+    <datalist id="clubs"></datalist>
+    <span class="chips" id="chips"></span>
+    <button class="pill" id="reset">Reset</button>
+  </div>
+
+  <div class="grid">
+    <section class="card">
+      <h2 id="t1">Clubs that pay more finish higher, but not by a fixed amount</h2>
+      <p class="cap" id="c1"></p>
+      <svg id="scatter" viewBox="0 0 760 440" role="img" aria-label="Scatter plot of staff costs against league result"></svg>
+      <p class="note">Each dot is one club in one season. The horizontal axis is staff costs divided by that season's average, on a log scale, so inflation does not distort the comparison. Hover a dot for the details.</p>
+    </section>
+
+    <div class="grid two">
+      <section class="card">
+        <h2>Who beat their wage bill</h2>
+        <p class="cap" id="c2"></p>
+        <label style="color:var(--muted);font-size:.82rem">Minimum seasons <select id="minSeasons"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option></select></label>
+        <svg id="bars" viewBox="0 0 520 520" role="img" aria-label="Average points above or below prediction by club"></svg>
+      </section>
+      <section class="card">
+        <h2>Has the link changed over time</h2>
+        <p class="cap" id="c3"></p>
+        <svg id="trend" viewBox="0 0 520 260" role="img" aria-label="R squared by season"></svg>
+        <h2 style="margin-top:20px">Who pays the bills</h2>
+        <p class="cap" id="c4"></p>
+        <svg id="conc" viewBox="0 0 520 220" role="img" aria-label="Top six share of staff costs by season"></svg>
+      </section>
+    </div>
+
+    <section class="card" id="clubCard">
+      <h2 id="clubTitle">Club story</h2>
+      <p class="cap" id="c5">Pick a club in the highlight box to see its season by season record.</p>
+      <svg id="clubChart" viewBox="0 0 760 240" role="img" aria-label="Club wage rank and league position by season"></svg>
+    </section>
+
+    <section class="card">
+      <h2>The data</h2>
+      <p class="cap">Every row traces to a page of a filed set of accounts (see the repository). Click a column to sort.</p>
+      <div class="tablewrap"><table id="table"></table></div>
+    </section>
+
+    <section class="card">
+      <h2>How it was built, and what to be careful about</h2>
+      <ul class="method">
+        <li>Results come from football-data.co.uk. Staff costs come from the notes to each club's accounts at Companies House, read from the page images and checked so that wages, social security and pension costs add to the printed total.</li>
+        <li>Staff costs are the club's total employee costs, not player wages alone. They include commercial and administrative staff, and some clubs report group rather than company figures. Treat small gaps between clubs as noise.</li>
+        <li>Periods of 11, 13 or 14 months (year-end changes, the 2020 extension) are scaled to 12 months. The toggle above shows the figures as reported.</li>
+        <li>The model is <code>points = a + b * ln(staff costs / season average)</code>, with errors clustered by club. It describes association. It does not show that spending causes points.</li>
+        <li>Averages for clubs with only three or four seasons move a lot. Brentford's gap, for example, rests on four seasons.</li>
+      </ul>
+    </section>
+  </div>
+</div>
+<div class="tip" id="tip"></div>
+<script src="data.js"></script>
+<script>
+(function () {
+  const D = window.FOOTBALL_DATA;
+  const rows = D.rows;
+  const seasons = [...new Set(rows.map(r => r.season))].sort();
+  const clubsAll = [...new Set(rows.map(r => r.club))].sort();
+  const state = { from: seasons[0], to: seasons[seasons.length - 1], metric: "points", basis: "annual", picked: [], sortKey: "season", sortDir: 1 };
+  const $ = id => document.getElementById(id);
+  const NS = "http://www.w3.org/2000/svg";
+  const fmt = (n, d = 0) => Number(n).toLocaleString("en-GB", { minimumFractionDigits: d, maximumFractionDigits: d });
+  const money = k => "£" + fmt(k / 1000, 0) + "m";
+  const short = c => c.replace(" & Hove Albion", "").replace("Wolverhampton Wanderers", "Wolves").replace("Manchester ", "Man ").replace(" United", " Utd").replace("Tottenham Hotspur", "Spurs").replace("West Bromwich Albion", "West Brom").replace("Nottingham Forest", "Forest");
+
+  function el(name, attrs, parent, text) {
+    const e = document.createElementNS(NS, name);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    if (text !== undefined) e.textContent = text;
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function clear(svg) { while (svg.firstChild) svg.removeChild(svg.firstChild); }
+
+  // ---------- data selection ----------
+  function selected() {
+    const sel = rows.filter(r => r.season >= state.from && r.season <= state.to).map(r => ({ ...r }));
+    const bySeason = {};
+    sel.forEach(r => { (bySeason[r.season] = bySeason[r.season] || []).push(r); });
+    Object.values(bySeason).forEach(list => {
+      const key = state.basis === "annual" ? "staff_costs_annualised_k" : "staff_costs_reported_k";
+      const mean = list.reduce((s, r) => s + r[key], 0) / list.length;
+      list.forEach(r => { r.cost = r[key]; r.idx = r[key] / mean; r.lnx = Math.log(r.idx); });
+    });
+    sel.forEach(r => { r.y = state.metric === "points" ? r.points : r.position; });
+    return sel;
+  }
+  function ols(data) {
+    const n = data.length;
+    if (n < 3) return null;
+    const mx = data.reduce((s, r) => s + r.lnx, 0) / n, my = data.reduce((s, r) => s + r.y, 0) / n;
+    let sxx = 0, sxy = 0, syy = 0;
+    data.forEach(r => { sxx += (r.lnx - mx) ** 2; sxy += (r.lnx - mx) * (r.y - my); syy += (r.y - my) ** 2; });
+    const b = sxy / sxx, a = my - b * mx;
+    return { a, b, r2: sxy * sxy / (sxx * syy), n };
+  }
+
+  // ---------- tooltip ----------
+  const tip = $("tip");
+  function showTip(evt, html) {
+    tip.innerHTML = html; tip.style.display = "block";
+    const w = tip.offsetWidth, h = tip.offsetHeight;
+    tip.style.left = Math.min(evt.clientX + 14, window.innerWidth - w - 8) + "px";
+    tip.style.top = Math.min(evt.clientY + 14, window.innerHeight - h - 8) + "px";
+  }
+  const hideTip = () => { tip.style.display = "none"; };
+
+  // ---------- charts ----------
+  function drawScatter(data, fit) {
+    const svg = $("scatter"); clear(svg);
+    const W = 760, H = 440, m = { l: 52, r: 16, t: 12, b: 44 };
+    const xs = [0.3, 0.4, 0.6, 1, 1.5, 2, 3];
+    const x = v => m.l + (Math.log(v) - Math.log(0.28)) / (Math.log(3.4) - Math.log(0.28)) * (W - m.l - m.r);
+    const yMax = state.metric === "points" ? 105 : 20.5, yMin = state.metric === "points" ? 5 : 0.5;
+    const y = v => state.metric === "points"
+      ? H - m.b - (v - yMin) / (yMax - yMin) * (H - m.t - m.b)
+      : m.t + (v - yMin) / (yMax - yMin) * (H - m.t - m.b);
+    xs.forEach(v => { el("line", { x1: x(v), x2: x(v), y1: m.t, y2: H - m.b, stroke: "#22304a" }, svg); el("text", { x: x(v), y: H - m.b + 18, "text-anchor": "middle" }, svg, v + "x"); });
+    const yt = state.metric === "points" ? [20, 40, 60, 80, 100] : [1, 5, 10, 15, 20];
+    yt.forEach(v => { el("line", { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), stroke: "#22304a" }, svg); el("text", { x: m.l - 8, y: y(v) + 4, "text-anchor": "end" }, svg, v); });
+    el("text", { x: (m.l + W - m.r) / 2, y: H - 6, "text-anchor": "middle", class: "ink" }, svg, "Staff costs relative to the season average (log scale)");
+    el("text", { x: 12, y: (m.t + H - m.b) / 2, transform: `rotate(-90 12 ${(m.t + H - m.b) / 2})`, "text-anchor": "middle", class: "ink" }, svg, state.metric === "points" ? "League points" : "League position (1 = champions)");
+    if (fit) {
+      const x0 = 0.3, x1 = 2.6;
+      el("line", { x1: x(x0), x2: x(x1), y1: y(fit.a + fit.b * Math.log(x0)), y2: y(fit.a + fit.b * Math.log(x1)), stroke: "#c3cad8", "stroke-width": 2 }, svg);
+    }
+    const picked = new Set(state.picked);
+    const draw = (list, color, r) => list.forEach(d => {
+      const c = el("circle", { cx: x(d.idx), cy: y(d.y), r, fill: color, stroke: "#0f1a2e", "stroke-width": 2, "fill-opacity": picked.size && color === "#3987e5" ? 0.35 : 0.8 }, svg);
+      const hit = el("circle", { cx: x(d.idx), cy: y(d.y), r: 10, fill: "transparent" }, svg);
+      hit.addEventListener("mousemove", e => {
+        const res = fit ? d.y - (fit.a + fit.b * d.lnx) : null;
+        showTip(e, `<b>${d.club}</b> <span class="m">${d.season}</span><br>Staff costs ${money(d.cost)} (${fmt(d.idx, 2)}x average)<br>Wage rank ${d.wage_rank}, finished ${d.position}, ${d.points} pts` +
+          (res !== null ? `<br><span class="m">${state.metric === "points" ? (res >= 0 ? "+" : "") + fmt(res, 1) + " pts vs the fitted line" : (res <= 0 ? "" : "+") + fmt(res, 1) + " places vs the fitted line"}</span>` : ""));
+      });
+      hit.addEventListener("mouseleave", hideTip);
+    });
+    draw(data.filter(d => !picked.has(d.club)), "#3987e5", 4.5);
+    draw(data.filter(d => picked.has(d.club)), "#d95926", 6);
+    data.filter(d => picked.has(d.club)).forEach(d => el("text", { x: x(d.idx) + 8, y: y(d.y) - 7, class: "ink" }, svg, `${short(d.club)} ${d.season.slice(2, 4)}/${d.season.slice(5)}`));
+  }
+
+  function drawBars(data, fit) {
+    const svg = $("bars"); clear(svg);
+    if (!fit) return;
+    const min = +$("minSeasons").value;
+    const by = {};
+    data.forEach(d => { (by[d.club] = by[d.club] || []).push(d.y - (fit.a + fit.b * d.lnx)); });
+    let list = Object.entries(by).filter(([, v]) => v.length >= min).map(([club, v]) => ({ club, n: v.length, avg: v.reduce((s, a) => s + a, 0) / v.length }));
+    // For position, a negative gap (better position) means over-performance, so flip the sign.
+    if (state.metric === "position") list.forEach(d => d.avg = -d.avg);
+    list.sort((a, b) => b.avg - a.avg);
+    const rowH = 21, W = 520, m = { l: 132, r: 44, t: 8, b: 30 };
+    const H = Math.max(120, list.length * rowH + m.t + m.b);
+    svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+    const ext = Math.max(5, ...list.map(d => Math.abs(d.avg))) + 3;
+    const x = v => m.l + (v + ext) / (2 * ext) * (W - m.l - m.r);
+    el("line", { x1: x(0), x2: x(0), y1: m.t, y2: H - m.b, stroke: "#8a93a6" }, svg);
+    list.forEach((d, i) => {
+      const yy = m.t + i * rowH;
+      const col = d.avg >= 0 ? "#3987e5" : "#e66767";
+      el("rect", { x: Math.min(x(0), x(d.avg)), y: yy + 3, width: Math.abs(x(d.avg) - x(0)), height: 14, rx: 3, fill: col, "fill-opacity": state.picked.length && !state.picked.includes(d.club) ? 0.45 : 1 }, svg);
+      el("text", { x: m.l - 8, y: yy + 14.5, "text-anchor": "end", class: state.picked.includes(d.club) ? "ink" : "" }, svg, short(d.club));
+      el("text", { x: d.avg >= 0 ? x(d.avg) + 5 : x(d.avg) - 5, y: yy + 14.5, "text-anchor": d.avg >= 0 ? "start" : "end", class: "ink" }, svg, (d.avg >= 0 ? "+" : "") + fmt(d.avg, 1));
+      const hit = el("rect", { x: 0, y: yy, width: W, height: rowH, fill: "transparent" }, svg);
+      hit.addEventListener("mousemove", e => showTip(e, `<b>${d.club}</b><br>${d.n} season${d.n > 1 ? "s" : ""} in the selection<br>${(d.avg >= 0 ? "+" : "") + fmt(d.avg, 1)} ${state.metric === "points" ? "points" : "places"} vs the fitted line per season`));
+      hit.addEventListener("mouseleave", hideTip);
+    });
+    el("text", { x: x(0), y: H - 10, "text-anchor": "middle" }, svg, state.metric === "points" ? "Average points vs prediction" : "Average places vs prediction");
+  }
+
+  function lineChart(svg, W, H, series, opts) {
+    clear(svg);
+    const m = { l: 40, r: 56, t: 10, b: 28 };
+    const x = i => m.l + i / (seasons.length - 1) * (W - m.l - m.r);
+    const y = v => H - m.b - (v - opts.min) / (opts.max - opts.min) * (H - m.t - m.b);
+    opts.ticks.forEach(v => { el("line", { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), stroke: "#22304a" }, svg); el("text", { x: m.l - 6, y: y(v) + 4, "text-anchor": "end" }, svg, opts.tickFmt(v)); });
+    seasons.forEach((s, i) => { if (i % 2 === 0 || i === seasons.length - 1) el("text", { x: x(i), y: H - 8, "text-anchor": "middle" }, svg, s.slice(2)); });
+    const i0 = seasons.indexOf(state.from), i1 = seasons.indexOf(state.to);
+    el("rect", { x: x(i0) - 8, y: m.t, width: x(i1) - x(i0) + 16, height: H - m.t - m.b, fill: "#3987e5", "fill-opacity": 0.08 }, svg);
+    series.forEach(s => {
+      const pts = s.values.map((v, i) => [x(i), y(v)]);
+      el("polyline", { points: pts.map(p => p.join(",")).join(" "), fill: "none", stroke: s.color, "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round" }, svg);
+      pts.forEach((p, i) => {
+        el("circle", { cx: p[0], cy: p[1], r: 4, fill: s.color, stroke: "#0f1a2e", "stroke-width": 2 }, svg);
+        const hit = el("circle", { cx: p[0], cy: p[1], r: 12, fill: "transparent" }, svg);
+        hit.addEventListener("mousemove", e => showTip(e, `<b>${seasons[i]}</b><br>${s.label}: ${opts.tipFmt(s.values[i])}`));
+        hit.addEventListener("mouseleave", hideTip);
+      });
+      const last = pts[pts.length - 1];
+      el("text", { x: last[0] + 8, y: last[1] + 4, class: "ink" }, svg, opts.endFmt(s.values[s.values.length - 1]));
+    });
+  }
+
+  function drawClub(data, fit) {
+    const svg = $("clubChart"); clear(svg);
+    const club = state.picked[state.picked.length - 1];
+    svg.style.display = club ? "block" : "none";
+    $("clubTitle").textContent = club ? club : "Club story";
+    if (!club) { $("c5").textContent = "Pick a club in the highlight box to see its season by season record."; return; }
+    const mine = rows.filter(r => r.club === club);
+    const W = 760, H = 240, m = { l: 90, r: 20, t: 14, b: 34 };
+    const _ = 0;
+    const x = i => m.l + i / (seasons.length - 1) * (W - m.l - m.r);
+    const y = v => m.t + (v - 1) / 19 * (H - m.t - m.b);
+    [1, 5, 10, 15, 20].forEach(v => { el("line", { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), stroke: "#22304a" }, svg); el("text", { x: m.l - 8, y: y(v) + 4, "text-anchor": "end" }, svg, v); });
+    el("text", { x: 14, y: (m.t + H - m.b) / 2, transform: `rotate(-90 14 ${(m.t + H - m.b) / 2})`, "text-anchor": "middle", class: "ink" }, svg, "Rank (1 = best)");
+    seasons.forEach((s, i) => el("text", { x: x(i), y: H - 12, "text-anchor": "middle" }, svg, s.slice(2)));
+    const draw = (key, color, label) => {
+      const pts = mine.map(r => [x(seasons.indexOf(r.season)), y(r[key])]);
+      el("polyline", { points: pts.map(p => p.join(",")).join(" "), fill: "none", stroke: color, "stroke-width": 2 }, svg);
+      mine.forEach((r, k) => {
+        el("circle", { cx: pts[k][0], cy: pts[k][1], r: 4.5, fill: color, stroke: "#0f1a2e", "stroke-width": 2 }, svg);
+        const hit = el("circle", { cx: pts[k][0], cy: pts[k][1], r: 12, fill: "transparent" }, svg);
+        hit.addEventListener("mousemove", e => showTip(e, `<b>${r.club}</b> <span class="m">${r.season}</span><br>Wage rank ${r.wage_rank}, finished ${r.position}<br>Staff costs ${money(r.staff_costs_annualised_k)}`));
+        hit.addEventListener("mouseleave", hideTip);
+      });
+      return pts;
+    };
+    const a = draw("wage_rank", "#8a93a6", "Wage rank");
+    const b = draw("position", "#d95926", "League position");
+    el("text", { x: a[a.length - 1][0], y: a[a.length - 1][1] - 10, "text-anchor": "end", class: "ink" }, svg, "Wage rank (grey)");
+    el("text", { x: b[b.length - 1][0], y: b[b.length - 1][1] + 18, "text-anchor": "end", class: "ink" }, svg, "League position (orange)");
+    const better = mine.filter(r => r.position < r.wage_rank).length;
+    const avgGap = mine.reduce((s, r) => s + (r.wage_rank - r.position), 0) / mine.length;
+    $("c5").textContent = `${club} finished above its wage rank in ${better} of ${mine.length} seasons, by ${avgGap >= 0 ? "+" : ""}${fmt(avgGap, 1)} places on average.`;
+  }
+
+  function drawTable(data) {
+    const t = $("table");
+    const cols = [["season", "Season"], ["club", "Club"], ["cost", "Staff costs £m"], ["idx", "x average"], ["wage_rank", "Wage rank"], ["position", "Position"], ["points", "Points"], ["months", "Months"]];
+    const list = [...data].sort((p, q) => (p[state.sortKey] > q[state.sortKey] ? 1 : p[state.sortKey] < q[state.sortKey] ? -1 : 0) * state.sortDir);
+    t.innerHTML = "<thead><tr>" + cols.map(c => `<th data-k="${c[0]}">${c[1]}</th>`).join("") + "</tr></thead><tbody>" +
+      list.map(r => `<tr><td>${r.season}</td><td>${r.club}</td><td>${fmt(r.cost / 1000, 1)}</td><td>${fmt(r.idx, 2)}</td><td>${r.wage_rank}</td><td>${r.position}</td><td>${r.points}</td><td>${r.months}</td></tr>`).join("") + "</tbody>";
+    t.querySelectorAll("th").forEach(th => th.addEventListener("click", () => {
+      const k = th.dataset.k; state.sortDir = state.sortKey === k ? -state.sortDir : 1; state.sortKey = k; drawTable(data);
+    }));
+  }
+
+  // ---------- render ----------
+  function render() {
+    const data = selected(), fit = ols(data);
+    const yrs = seasons.indexOf(state.to) - seasons.indexOf(state.from) + 1;
+    $("heroR2").textContent = fit ? Math.round(fit.r2 * 100) + "%" : "--";
+    $("heroCap").textContent = fit ? `of the variation in ${state.metric === "points" ? "league points" : "final league position"} is explained by staff costs relative to the season average, across ${fit.n} club-seasons (${state.from} to ${state.to}).` : "Choose at least two seasons.";
+    const doubling = fit && state.metric === "points" ? fit.b * Math.log(2) : null;
+    $("stats").innerHTML = [
+      [fit ? (state.metric === "points" ? (doubling >= 0 ? "+" : "") + fmt(doubling, 0) + " pts" : fmt(fit.b * Math.log(2), 1) + " places") : "--", state.metric === "points" ? "extra points from doubling staff costs" : "change in position from doubling staff costs"],
+      [yrs, "seasons selected"], [data.length, "club-seasons"], [new Set(data.map(d => d.club)).size, "clubs"]
+    ].map(s => `<div class="stat"><div class="v">${s[0]}</div><div class="l">${s[1]}</div></div>`).join("");
+    $("c1").textContent = fit ? `A club paying twice the season average finishes about ${fmt(Math.abs(fit.b * Math.log(2)), 0)} ${state.metric === "points" ? "points higher" : "places " + (fit.b < 0 ? "higher" : "lower")} on average, but the dots above and below the line show how much room there is for luck and management.` : "";
+    drawScatter(data, fit);
+    drawBars(data, fit);
+    $("c2").textContent = "Average gap between a club's actual result and what its staff costs predict, for the selected seasons.";
+    const ps = D.perSeason;
+    lineChart($("trend"), 520, 260, [{ label: "R squared", color: "#3987e5", values: ps.map(p => p.r2) }], { min: 0, max: 1, ticks: [0, 0.25, 0.5, 0.75, 1], tickFmt: v => Math.round(v * 100) + "%", tipFmt: v => Math.round(v * 100) + "%", endFmt: v => Math.round(v * 100) + "%" });
+    const lo = ps.reduce((a, p) => p.r2 < a.r2 ? p : a, ps[0]), hi = ps.reduce((a, p) => p.r2 > a.r2 ? p : a, ps[0]);
+    $("c3").textContent = `Season by season the link ranges from ${Math.round(lo.r2 * 100)}% (${lo.season}) to ${Math.round(hi.r2 * 100)}% (${hi.season}). The shaded band is your selection.`;
+    const sm = D.seasons;
+    lineChart($("conc"), 520, 220, [{ label: "Top six share", color: "#d95926", values: sm.map(s => s.top6_share_pct) }], { min: 40, max: 60, ticks: [40, 45, 50, 55, 60], tickFmt: v => v + "%", tipFmt: v => v + "% of league staff costs", endFmt: v => Math.round(v) + "%" });
+    $("c4").textContent = `The six biggest payers account for ${Math.round(sm[0].top6_share_pct)}% of league staff costs in ${sm[0].season} and ${Math.round(sm[sm.length - 1].top6_share_pct)}% in ${sm[sm.length - 1].season}.`;
+    drawClub(data, fit);
+    drawTable(data);
+  }
+
+  // ---------- controls ----------
+  [$("from"), $("to")].forEach(s => seasons.forEach(v => s.add(new Option(v, v))));
+  $("to").value = state.to;
+  $("from").addEventListener("change", e => { state.from = e.target.value; if (state.from > state.to) { state.to = state.from; $("to").value = state.to; } render(); });
+  $("to").addEventListener("change", e => { state.to = e.target.value; if (state.to < state.from) { state.from = state.to; $("from").value = state.from; } render(); });
+  $("minSeasons").addEventListener("change", render);
+  function pills(id, key) {
+    $(id).querySelectorAll(".pill").forEach(b => b.addEventListener("click", () => {
+      $(id).querySelectorAll(".pill").forEach(o => o.setAttribute("aria-pressed", o === b));
+      state[key] = b.dataset.v; render();
+    }));
+  }
+  pills("metric", "metric"); pills("basis", "basis");
+  clubsAll.forEach(c => $("clubs").appendChild(new Option(c)));
+  function chips() {
+    $("chips").innerHTML = "";
+    state.picked.forEach(c => { const b = document.createElement("button"); b.className = "chip"; b.textContent = c + " ×"; b.addEventListener("click", () => { state.picked = state.picked.filter(x => x !== c); chips(); render(); }); $("chips").appendChild(b); });
+  }
+  $("club").addEventListener("change", e => {
+    const v = clubsAll.find(c => c.toLowerCase() === e.target.value.trim().toLowerCase());
+    if (v && !state.picked.includes(v)) { state.picked.push(v); chips(); render(); }
+    e.target.value = "";
+  });
+  $("reset").addEventListener("click", () => {
+    state.from = seasons[0]; state.to = seasons[seasons.length - 1]; state.metric = "points"; state.basis = "annual"; state.picked = [];
+    $("from").value = state.from; $("to").value = state.to;
+    ["metric", "basis"].forEach(id => $(id).querySelectorAll(".pill").forEach((o, i) => o.setAttribute("aria-pressed", i === 0)));
+    chips(); render();
+  });
+  render();
+})();
+</script>
+</body>
+</html>

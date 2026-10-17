@@ -1,0 +1,14 @@
+.env
+data/raw/
+data/processed/pages/
+data/processed/*.log
+__pycache__/
+*.pyc
+.Rhistory
+*.Rproj.user/
+.DS_Store
+Thumbs.db
+
+# personal prep notes, kept local
+docs/linkedin_and_interview.md
+docs/walkthrough.md
